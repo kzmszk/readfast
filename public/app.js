@@ -1,7 +1,8 @@
 import { characters, splitText, displayDuration } from './core.js';
-import { pastContext, createPositionCoordinator } from './reading-position.js';
+import { createPositionCoordinator } from './reading-position.js';
 import { initAozora } from './aozora.js';
 import { createFullTextView } from './full-text.js';
+import { createStableHistory } from './stable-history.js';
 
 const $ = (id) => document.getElementById(id);
 const sample = [
@@ -22,6 +23,7 @@ let mode = 'rapid';
 let visibleIndex = 0;
 let fullTextDirty = true;
 const fullTextView = createFullTextView($('full-text'));
+const historyView = createStableHistory($('past-text'));
 const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
 const readingPosition = createPositionCoordinator(commitPosition, schedule);
 const library = initAozora((book) => {
@@ -82,9 +84,7 @@ function commitPosition(position) {
       span.setAttribute('aria-hidden', 'true');
     }
   });
-  const past = $('past-text');
-  past.textContent = pastContext(chunks, position).join(' ');
-  past.scrollTop = past.scrollHeight;
+  if (mode === 'rapid') historyView.render(chunks, position);
   $('counter').textContent = `${chunks.length ? position + 1 : 0} / ${chunks.length}`;
   $('progress-bar').style.width = `${chunks.length ? (finished ? 100 : position / chunks.length * 100) : 0}%`;
   if (mode === 'full') fullTextView.highlight(position);

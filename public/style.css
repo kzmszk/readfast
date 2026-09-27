@@ -22,7 +22,8 @@
 #word { font-family: inherit; font-size: inherit; font-weight: inherit; max-width: none; }
 .stage { height: 260px; }
 #reading-track { top: 62%; }
-#past-text { position: absolute; left: 12%; right: 12%; bottom: calc(38% + 52px); height: 3.4em; overflow: hidden; font-size: clamp(14px, 1.8vw, 16px); line-height: 1.7; color: #7c8c76; overflow-wrap: anywhere; }
+#past-text { position: absolute; left: 12%; right: 12%; bottom: calc(38% + 52px); height: 3.4em; overflow: hidden; font-size: clamp(14px, 1.8vw, 16px); line-height: 1.7; color: #7c8c76; font-kerning: none; font-variant-ligatures: none; }
+.history-line { height: 1.7em; white-space: pre; text-align: left; }
 .guide { z-index: 1; pointer-events: none; height: 8px; }
 .guide.top { top: calc(62% - 32px); }
 .guide.bottom { top: calc(62% + 32px); bottom: auto; }

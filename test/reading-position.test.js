@@ -1,21 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { pastContext, createPositionCoordinator } from '../public/reading-position.js';
+import { createPositionCoordinator } from '../public/reading-position.js';
 
 function movement() {
   let finish, reject;
   const finished = new Promise((resolve, fail) => { finish = resolve; reject = fail; });
   return { finished, finish, cancel: () => reject(new Error('Cancelled')) };
 }
-
-test('history ends at the phrase immediately before the current one', () => {
-  const chunks = ['制度の', '導入後に', '生産性が', '向上した。'];
-  assert.deepEqual(pastContext(chunks, 0), []);
-  assert.deepEqual(pastContext(chunks, 1), ['制度の']);
-  assert.deepEqual(pastContext(chunks, 3), chunks.slice(0, 3));
-  assert.deepEqual(pastContext(chunks, 2), chunks.slice(0, 2));
-  assert.deepEqual(pastContext(chunks, 3, 2), chunks.slice(1, 3));
-});
 
 test('focus, context and dwell start commit only after motion completes', async () => {
   const commits = [];
