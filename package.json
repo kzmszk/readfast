@@ -5,6 +5,11 @@
   "type": "module",
   "scripts": {
     "start": "python3 -m http.server 4173 --bind 127.0.0.1 --directory public",
-    "test": "node --test"
+    "test": "node --test",
+    "build:segmenter": "node scripts/build-segmenter.mjs"
+  },
+  "devDependencies": {
+    "budoux": "0.9.2",
+    "esbuild": "0.28.2"
   }
 }

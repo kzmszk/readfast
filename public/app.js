@@ -112,7 +112,7 @@ $('speed').addEventListener('input', () => {
   schedule();
 });
 $('size').addEventListener('input', () => {
-  $('size-value').innerHTML = `${Number($('size').value)} <small>文字まで</small>`;
+  $('size-value').innerHTML = `${Number($('size').value)} <small>文字目安</small>`;
   prepare(source);
 });
 $('pause').addEventListener('change', schedule);
