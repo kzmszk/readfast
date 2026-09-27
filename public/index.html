@@ -15,6 +15,11 @@
     <section class="reader" aria-label="リーダー">
       <div class="reader-top"><span id="state" role="status">準備できました</span><span id="counter">0 / 0</span></div>
       <p id="reading-source" hidden></p>
+      <div class="reading-modes" role="group" aria-label="読むモード">
+        <button id="mode-rapid" type="button" aria-pressed="true" aria-controls="rapid-view">速読</button>
+        <button id="mode-full" type="button" aria-pressed="false" aria-controls="full-view">全文で読む</button>
+      </div>
+      <div id="rapid-view">
       <div class="stage">
         <div id="past-text" aria-label="読み終わった文章"></div>
         <div class="guide top"></div>
@@ -26,6 +31,12 @@
       <div class="controls"><button id="restart" class="icon" aria-label="最初に戻る" title="最初に戻る">↺</button><button id="previous" class="icon" aria-label="ひとつ前へ" title="ひとつ前へ（←）">←</button><button id="play" class="primary">読みはじめる <span>▶</span></button><button id="next" class="icon" aria-label="ひとつ次へ" title="ひとつ次へ（→）">→</button></div>
       <div class="reader-speed"><label for="speed">読むスピード <output id="speed-value" for="speed">600 <small>文字 / 分</small></output></label><input id="speed" type="range" min="100" max="2400" step="50" value="600"><div class="range-labels"><span>ゆっくり</span><span>はやく</span></div></div>
       <p class="shortcut"><kbd>Space</kbd> 再生 / 停止 <span>·</span> <kbd>←</kbd> <kbd>→</kbd> 読み戻し / 送り</p>
+      </div>
+      <div id="full-view" hidden>
+        <div class="full-text-toolbar"><p>速読で読んでいた箇所を強調しています。</p><button id="full-current" class="text-button" type="button">今の位置へ</button></div>
+        <div id="full-text" role="region" aria-label="文章の全文" tabindex="0"></div>
+        <p class="full-text-hint">「速読」に戻ると、同じ位置から再開できます。</p>
+      </div>
     </section>
     <details id="library" class="library">
       <summary><span>青空文庫から選ぶ</span><span class="library-summary-note">著者・作品名で探す</span></summary>

@@ -1,6 +1,7 @@
 import { characters, splitText, displayDuration } from './core.js';
 import { pastContext, createPositionCoordinator } from './reading-position.js';
 import { initAozora } from './aozora.js';
+import { createFullTextView } from './full-text.js';
 
 const $ = (id) => document.getElementById(id);
 const sample = [
@@ -17,6 +18,10 @@ let playing = false;
 let finished = false;
 let timer;
 let readingElements = [];
+let mode = 'rapid';
+let visibleIndex = 0;
+let fullTextDirty = true;
+const fullTextView = createFullTextView($('full-text'));
 const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
 const readingPosition = createPositionCoordinator(commitPosition, schedule);
 const library = initAozora((book) => {
@@ -52,6 +57,7 @@ function buildTrack() {
 }
 
 function fitTrack() {
+  if (mode === 'full') return;
   const available = $('reading-window').clientWidth * 0.72;
   const fontSize = parseFloat(getComputedStyle($('reading-track')).fontSize);
   for (const span of readingElements) span.style.fontSize = '';
@@ -62,6 +68,7 @@ function fitTrack() {
 }
 
 function commitPosition(position) {
+  visibleIndex = position;
   readingElements.forEach((span, i) => {
     span.classList.toggle('is-current', i === position);
     span.classList.toggle('is-past', i < position);
@@ -80,6 +87,7 @@ function commitPosition(position) {
   past.scrollTop = past.scrollHeight;
   $('counter').textContent = `${chunks.length ? position + 1 : 0} / ${chunks.length}`;
   $('progress-bar').style.width = `${chunks.length ? (finished ? 100 : position / chunks.length * 100) : 0}%`;
+  if (mode === 'full') fullTextView.highlight(position);
 }
 
 function positionTrack(animate) {
@@ -101,12 +109,34 @@ function positionTrack(animate) {
 
 function render(animate = false) {
   $('play').textContent = playing ? '一時停止 Ⅱ' : finished ? 'もう一度読む ↺' : '再生する ▶';
-  $('state').textContent = playing ? '読んでいます' : finished ? '読み終わりました' : '一時停止中';
+  $('state').textContent = mode === 'full' ? '全文表示中' : playing ? '読んでいます' : finished ? '読み終わりました' : '一時停止中';
   $('play').disabled = chunks.length === 0;
   $('previous').disabled = !chunks.length || index === 0;
   $('next').disabled = !chunks.length || index === chunks.length - 1;
   $('restart').disabled = !chunks.length;
-  positionTrack(animate);
+  $('full-current').disabled = !chunks.length;
+  if (mode === 'full') {
+    if (fullTextDirty) {
+      fullTextView.build(source, chunks);
+      fullTextDirty = false;
+    }
+    readingPosition.moveTo(index);
+  } else positionTrack(animate);
+}
+
+function setMode(nextMode) {
+  if (mode === nextMode) return;
+  stop();
+  // During a slide, the previous phrase is still the highlighted reading target.
+  if (readingPosition.moving) index = visibleIndex;
+  mode = nextMode;
+  $('rapid-view').hidden = mode !== 'rapid';
+  $('full-view').hidden = mode !== 'full';
+  $('mode-rapid').setAttribute('aria-pressed', String(mode === 'rapid'));
+  $('mode-full').setAttribute('aria-pressed', String(mode === 'full'));
+  if (mode === 'rapid') fitTrack();
+  render();
+  if (mode === 'full') fullTextView.scrollToCurrent();
 }
 
 function stop() {
@@ -116,7 +146,7 @@ function stop() {
 
 function schedule() {
   clearTimeout(timer);
-  if (!playing || readingPosition.moving) return;
+  if (!playing || mode !== 'rapid' || readingPosition.moving) return;
   timer = setTimeout(() => {
     if (index === chunks.length - 1) {
       stop();
@@ -130,7 +160,7 @@ function schedule() {
 }
 
 function toggle() {
-  if (!chunks.length) return;
+  if (!chunks.length || mode !== 'rapid') return;
   if (playing) stop();
   else {
     if (finished) index = 0;
@@ -152,11 +182,13 @@ function prepare(text) {
   stop();
   source = text;
   chunks = splitText(source, Number($('size').value));
+  fullTextDirty = true;
   index = 0;
   finished = false;
   buildTrack();
   render();
-  $('state').textContent = chunks.length ? '準備できました' : '文章をセットしてください';
+  if (mode === 'full') fullTextView.scrollToCurrent();
+  $('state').textContent = chunks.length ? (mode === 'full' ? '全文表示中' : '準備できました') : '文章をセットしてください';
   $('message').textContent = chunks.length ? `${chunks.length} 個の区切りをセットしました。入力した文章はブラウザ内で処理されます。` : '読む文章を入力してください。';
 }
 
@@ -165,6 +197,9 @@ function countText() {
 }
 
 $('play').addEventListener('click', toggle);
+$('mode-rapid').addEventListener('click', () => setMode('rapid'));
+$('mode-full').addEventListener('click', () => setMode('full'));
+$('full-current').addEventListener('click', () => fullTextView.scrollToCurrent());
 $('previous').addEventListener('click', () => move(index - 1));
 $('next').addEventListener('click', () => move(index + 1));
 $('restart').addEventListener('click', () => move(0, false));
@@ -196,6 +231,7 @@ $('size').addEventListener('input', () => {
 $('pause').addEventListener('change', schedule);
 $('motion').addEventListener('change', () => render());
 document.addEventListener('keydown', (event) => {
+  if (mode === 'full') return;
   if (event.target.closest('input, textarea, select, button, a, [contenteditable]') || event.ctrlKey || event.metaKey || event.altKey || event.repeat) return;
   if (['Space', 'ArrowLeft', 'ArrowRight'].includes(event.code)) {
     event.preventDefault();
