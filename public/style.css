@@ -17,3 +17,43 @@
 select:focus-visible { outline: 3px solid #93af72; outline-offset: 4px; }
 select { width: 100%; border: 1px solid #cbd5c4; border-radius: 7px; background: #fffefa; color: #3c5944; padding: 9px 10px; font: inherit; font-size: 12px; }
 @media (max-width: 650px) { .stage { height: 240px; } #past-text { left: 8%; right: 8%; } }
+
+.library { margin-top: 24px; border: 1px solid #dce1d7; border-radius: 12px; background: #fffefa; }
+.library summary { cursor: pointer; padding: 19px 21px; font-size: 14px; font-weight: 600; }
+.library summary:focus-visible { outline: 3px solid #93af72; outline-offset: 4px; }
+.library-summary-note { float: right; color: #859084; font-size: 11px; font-weight: 400; }
+.library-body { padding: 0 21px 16px; }
+.library-search { display: flex; align-items: end; gap: 12px; }
+.library-search label { display: block; font-size: 11px; margin: 0 0 8px; }
+.library-query-field { flex: 1; min-width: 0; }
+.library-search input { width: 100%; min-width: 0; border: 1px solid #cbd5c4; border-radius: 7px; background: #fffefa; padding: 10px; color: #3c5944; font: inherit; font-size: 13px; }
+.library-search > button { min-height: 39px; flex-shrink: 0; }
+.author-shortcuts { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 16px 0; font-size: 11px; color: #859084; }
+.author-shortcuts button { border: 1px solid #e1e6da; border-radius: 20px; padding: 5px 10px; color: #566e50; background: #f5f7ef; font-size: 11px; }
+.author-shortcuts button:hover { background: #e9efdf; }
+.library-result-heading { display: flex; align-items: center; gap: 15px; }
+#library-status, #library-load-status { margin: 6px 0; font-size: 12px; }
+#library-load-status:empty { display: none; }
+#library-load-status { color: #3c5944; }
+#library-results { list-style: none; margin: 8px 0 16px; padding: 0; max-height: 460px; overflow-y: auto; overscroll-behavior: contain; }
+.book-row { display: flex; align-items: center; justify-content: space-between; gap: 20px; border-top: 1px solid #edf0e7; padding: 16px 4px; }
+.book-info { min-width: 0; overflow-wrap: anywhere; }
+.book-title { font-size: 15px; line-height: 1.6; font-weight: 550; margin: 0; }
+.book-subtitle, .book-meta { margin: 3px 0 0; font-size: 11px; }
+.book-meta { color: #819079; }
+.book-actions { display: flex; align-items: center; gap: 13px; flex-shrink: 0; }
+.book-card { color: #6c8167; font-size: 10px; text-underline-offset: 3px; }
+.library-pagination { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: 11px; color: #7c8976; }
+#reading-source { margin: 0 25px; font-size: 12px; color: #53674d; }
+#reading-source:not([hidden]) { display: flex; flex-wrap: wrap; gap: 4px 12px; }
+#reading-source a { color: #6c8167; font-size: 10px; align-self: center; }
+@media (max-width: 650px) {
+  .library summary { padding: 17px 15px; }
+  .library-summary-note { display: none; }
+  .library-body { padding: 0 15px 16px; }
+  .library-search { flex-wrap: wrap; }
+  .library-query-field { flex-basis: 100%; }
+  .library-search > div:not(.library-query-field) { flex: 1; }
+  .book-row { gap: 12px; }
+  .book-actions { flex-direction: column; gap: 8px; }
+}

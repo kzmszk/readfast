@@ -1,5 +1,6 @@
 import { characters, splitText, displayDuration } from './core.js';
 import { pastContext, createPositionCoordinator } from './reading-position.js';
+import { initAozora } from './aozora.js';
 
 const $ = (id) => document.getElementById(id);
 const sample = [
@@ -18,6 +19,26 @@ let timer;
 let readingElements = [];
 const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
 const readingPosition = createPositionCoordinator(commitPosition, schedule);
+const library = initAozora((book) => {
+  $('text').value = book.text;
+  countText();
+  prepare(book.text);
+  const title = document.createElement('span');
+  title.textContent = `${book.title}${book.subtitle ? ' ' + book.subtitle : ''} / ${book.authors.join(' / ')}`;
+  const link = document.createElement('a');
+  link.href = book.cardUrl;
+  link.target = '_blank';
+  link.rel = 'noopener noreferrer';
+  link.textContent = '青空文庫・図書カード ↗';
+  $('reading-source').replaceChildren(title, link);
+  $('reading-source').hidden = false;
+  if (book.images) $('message').textContent += ' 一部の挿図・外字は説明文で表示しています。原文もご確認ください。';
+});
+
+function clearSource() {
+  $('reading-source').hidden = true;
+  $('reading-source').replaceChildren();
+}
 
 function buildTrack() {
   readingElements = (chunks.length ? chunks : ['ここから、読む。']).map((text) => {
@@ -147,12 +168,19 @@ $('play').addEventListener('click', toggle);
 $('previous').addEventListener('click', () => move(index - 1));
 $('next').addEventListener('click', () => move(index + 1));
 $('restart').addEventListener('click', () => move(0, false));
-$('apply').addEventListener('click', () => prepare($('text').value));
+$('apply').addEventListener('click', () => {
+  library.cancelLoad();
+  if ($('text').value !== source) clearSource();
+  prepare($('text').value);
+});
 $('text').addEventListener('input', () => {
+  library.cancelLoad();
   countText();
   $('message').textContent = '「この文章をセット」でリーダーに反映します。';
 });
 $('sample').addEventListener('click', () => {
+  library.cancelLoad();
+  clearSource();
   $('text').value = sample;
   countText();
   prepare(sample);
