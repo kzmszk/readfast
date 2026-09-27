@@ -25,6 +25,22 @@ function fitWord() {
   }
 }
 
+function renderHistory() {
+  const amount = Number($('history-size').value);
+  const recent = chunks.slice(Math.max(0, index - amount), index);
+  const history = $('history-text');
+  history.replaceChildren(...recent.map((text, offset) => {
+    const span = document.createElement('span');
+    span.textContent = text;
+    span.className = offset === recent.length - 1 ? 'history-latest' : 'history-older';
+    return span;
+  }));
+  $('history').style.visibility = amount && recent.length ? 'visible' : 'hidden';
+  // Keep the newest context visible even on a narrow screen, without moving
+  // the active reading position or announcing every update to screen readers.
+  history.scrollTop = history.scrollHeight;
+}
+
 function render() {
   $('word').textContent = chunks[index] || 'ここから、読む。';
   $('counter').textContent = `${chunks.length ? index + 1 : 0} / ${chunks.length}`;
@@ -36,6 +52,7 @@ function render() {
   $('next').disabled = !chunks.length || index === chunks.length - 1;
   $('restart').disabled = !chunks.length;
   fitWord();
+  renderHistory();
 }
 
 function stop() {
@@ -116,8 +133,9 @@ $('size').addEventListener('input', () => {
   prepare(source);
 });
 $('pause').addEventListener('change', schedule);
+$('history-size').addEventListener('change', renderHistory);
 document.addEventListener('keydown', (event) => {
-  if (event.target.closest('input, textarea, button, a, [contenteditable]') || event.ctrlKey || event.metaKey || event.altKey || event.repeat) return;
+  if (event.target.closest('input, textarea, select, button, a, [contenteditable]') || event.ctrlKey || event.metaKey || event.altKey || event.repeat) return;
   if (['Space', 'ArrowLeft', 'ArrowRight'].includes(event.code)) {
     event.preventDefault();
     if (event.code === 'Space') toggle();
@@ -127,7 +145,7 @@ document.addEventListener('keydown', (event) => {
 document.addEventListener('visibilitychange', () => {
   if (document.hidden && playing) { stop(); render(); }
 });
-window.addEventListener('resize', fitWord);
+window.addEventListener('resize', () => { fitWord(); renderHistory(); });
 $('text').value = sample;
 countText();
 prepare(sample);
