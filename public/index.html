@@ -14,20 +14,20 @@
     <section class="intro"><span class="eyebrow">LESS MOVEMENT. MORE READING.</span><h1>視線をとめて、読む。</h1><p>ひとつの場所に、少しずつ。あなたのペースで文章を読み進めよう。</p></section>
     <section class="reader" aria-label="リーダー">
       <div class="reader-top"><span id="state" role="status">準備できました</span><span id="counter">0 / 0</span></div>
-      <div class="stage"><div class="guide top"></div><div id="word" aria-label="表示中の文章">ここから、読む。</div><div class="guide bottom"></div></div>
-      <div class="history-slot">
-        <section id="history" aria-label="直前に読んだ部分" style="visibility: hidden">
-          <div class="history-label">ここまで読んだところ</div>
-          <div id="history-text" tabindex="0" aria-label="直前に読んだ部分の本文"></div>
-        </section>
+      <div class="stage">
+        <div id="past-text" aria-label="読み終わった文章"></div>
+        <div class="guide top"></div>
+        <div id="reading-window"><div id="reading-track"></div></div>
+        <div class="guide bottom"></div>
       </div>
+      <p class="reading-hint">中央を見たまま、文章が止まったところで読む。</p>
       <div class="progress"><div id="progress-bar"></div></div>
       <div class="controls"><button id="restart" class="icon" aria-label="最初に戻る" title="最初に戻る">↺</button><button id="previous" class="icon" aria-label="ひとつ前へ" title="ひとつ前へ（←）">←</button><button id="play" class="primary">読みはじめる <span>▶</span></button><button id="next" class="icon" aria-label="ひとつ次へ" title="ひとつ次へ（→）">→</button></div>
       <p class="shortcut"><kbd>Space</kbd> 再生 / 停止 <span>·</span> <kbd>←</kbd> <kbd>→</kbd> 読み戻し / 送り</p>
     </section>
     <div class="workspace">
       <section class="input-panel"><div class="section-title"><h2>読む文章</h2><button id="sample" class="text-button">サンプルを入れる</button></div><label for="text" class="sr-only">読む文章を入力</label><textarea id="text" spellcheck="false" placeholder="読みたい文章をここに貼り付けてください。"></textarea><div class="input-footer"><span id="text-count">0 文字</span><button id="apply" class="secondary">この文章をセット ↗</button></div><p id="message" role="status">入力した文章はブラウザ内で処理されます。</p></section>
-      <section class="settings"><h2>読み方を調整</h2><label for="speed">読むスピード <output id="speed-value" for="speed">600 <small>文字 / 分</small></output></label><input id="speed" type="range" min="100" max="2400" step="50" value="600"><div class="range-labels"><span>ゆっくり</span><span>はやく</span></div><label for="size">一度に表示する文字数 <output id="size-value" for="size">10 <small>文字目安</small></output></label><input id="size" type="range" min="4" max="16" step="1" value="10"><div class="range-labels"><span>少なく</span><span>多く</span></div><label for="history-size">読み終わった部分を残す</label><select id="history-size"><option value="0">残さない</option><option value="3">直前の3区切り</option><option value="6" selected>直前の6区切り</option><option value="10">直前の10区切り</option></select><label class="checkbox"><input id="pause" type="checkbox" checked>句読点のある区切りで、ひと呼吸</label><p class="note">助詞や語尾を含むまとまりを優先し、目安の文字数を超えることがあります。文字数を変えると先頭に戻ります。</p></section>
+      <section class="settings"><h2>読み方を調整</h2><label for="speed">読むスピード <output id="speed-value" for="speed">600 <small>文字 / 分</small></output></label><input id="speed" type="range" min="100" max="2400" step="50" value="600"><div class="range-labels"><span>ゆっくり</span><span>はやく</span></div><label for="size">一度に表示する文字数 <output id="size-value" for="size">10 <small>文字目安</small></output></label><input id="size" type="range" min="4" max="16" step="1" value="10"><div class="range-labels"><span>少なく</span><span>多く</span></div><label for="motion">文字が移動する時間</label><select id="motion"><option value="80">すばやく · 80ミリ秒</option><option value="140" selected>ふつう · 140ミリ秒</option><option value="240">ゆっくり · 240ミリ秒</option><option value="0">瞬時に切り替える</option></select><p class="note">移動 → 静止を繰り返します。読むスピードは静止時間に反映され、移動時間は別に加わります。</p><label class="checkbox"><input id="pause" type="checkbox" checked>句読点のある区切りで、ひと呼吸</label><p class="note">助詞や語尾を含むまとまりを優先し、目安の文字数を超えることがあります。文字数を変えると先頭に戻ります。</p></section>
     </div>
     <footer><span>ひと呼吸ずつ、自分のペースで。</span><span>readfast / 01</span></footer>
   </main>

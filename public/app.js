@@ -14,35 +14,67 @@ let index = 0;
 let playing = false;
 let finished = false;
 let timer;
+let settlesAt = 0;
+let readingElements = [];
+const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
 
-function fitWord() {
-  const word = $('word');
-  word.style.fontSize = '';
-  const width = $('word').parentElement.clientWidth - 40;
-  if (word.scrollWidth > width) {
-    const current = parseFloat(getComputedStyle(word).fontSize);
-    word.style.fontSize = `${current * width / word.scrollWidth}px`;
-  }
-}
-
-function renderHistory() {
-  const amount = Number($('history-size').value);
-  const recent = chunks.slice(Math.max(0, index - amount), index);
-  const history = $('history-text');
-  history.replaceChildren(...recent.map((text, offset) => {
+function buildTrack() {
+  readingElements = (chunks.length ? chunks : ['ここから、読む。']).map((text) => {
     const span = document.createElement('span');
+    span.className = 'reading-chunk';
     span.textContent = text;
-    span.className = offset === recent.length - 1 ? 'history-latest' : 'history-older';
     return span;
-  }));
-  $('history').style.visibility = amount && recent.length ? 'visible' : 'hidden';
-  // Keep the newest context visible even on a narrow screen, without moving
-  // the active reading position or announcing every update to screen readers.
-  history.scrollTop = history.scrollHeight;
+  });
+  $('reading-track').replaceChildren(...readingElements);
+  fitTrack();
 }
 
-function render() {
-  $('word').textContent = chunks[index] || 'ここから、読む。';
+function fitTrack() {
+  const available = $('reading-window').clientWidth * 0.72;
+  const fontSize = parseFloat(getComputedStyle($('reading-track')).fontSize);
+  for (const span of readingElements) span.style.fontSize = '';
+  const widths = readingElements.map((span) => span.scrollWidth);
+  readingElements.forEach((span, i) => {
+    if (widths[i] > available) span.style.fontSize = `${fontSize * available / widths[i]}px`;
+  });
+}
+
+function positionTrack(animate) {
+  const current = readingElements[index];
+  if (!current) return;
+  readingElements.forEach((span, i) => {
+    span.classList.toggle('is-current', i === index);
+    span.classList.toggle('is-past', i < index);
+    if (i === index) {
+      span.id = 'word';
+      span.setAttribute('aria-label', '表示中の文章');
+      span.removeAttribute('aria-hidden');
+    } else {
+      span.removeAttribute('id');
+      span.removeAttribute('aria-label');
+      span.setAttribute('aria-hidden', 'true');
+    }
+  });
+  const track = $('reading-track');
+  const duration = animate && !reducedMotion.matches ? Number($('motion').value) : 0;
+  // Keep the active phrase centered, with past and upcoming text on the same
+  // baseline. The DOM stays in place; only the line's translation changes.
+  const center = current.offsetLeft + current.offsetWidth / 2;
+  track.style.transitionDuration = `${duration}ms`;
+  track.style.transform = `translate(${-center}px, -50%)`;
+  settlesAt = performance.now() + duration;
+
+  // Earlier phrases that have completely left the line remain just above it.
+  // Avoid duplicating text still visible on the left of the active phrase.
+  const leftEdge = center - $('reading-window').clientWidth / 2;
+  let pastEnd = 0;
+  while (pastEnd < index && readingElements[pastEnd].offsetLeft + readingElements[pastEnd].offsetWidth <= leftEdge) pastEnd++;
+  const past = $('past-text');
+  past.textContent = chunks.slice(Math.max(0, pastEnd - 24), pastEnd).join(' ');
+  past.scrollTop = past.scrollHeight;
+}
+
+function render(animate = false) {
   $('counter').textContent = `${chunks.length ? index + 1 : 0} / ${chunks.length}`;
   $('progress-bar').style.width = `${chunks.length ? (finished ? 100 : index / chunks.length * 100) : 0}%`;
   $('play').textContent = playing ? '一時停止 Ⅱ' : finished ? 'もう一度読む ↺' : '再生する ▶';
@@ -51,8 +83,7 @@ function render() {
   $('previous').disabled = !chunks.length || index === 0;
   $('next').disabled = !chunks.length || index === chunks.length - 1;
   $('restart').disabled = !chunks.length;
-  fitWord();
-  renderHistory();
+  positionTrack(animate);
 }
 
 function stop() {
@@ -71,9 +102,9 @@ function schedule() {
       return;
     }
     index++;
-    render();
+    render(true);
     schedule();
-  }, displayDuration(chunks[index], Number($('speed').value), $('pause').checked));
+  }, Math.max(0, settlesAt - performance.now()) + displayDuration(chunks[index], Number($('speed').value), $('pause').checked));
 }
 
 function toggle() {
@@ -83,16 +114,17 @@ function toggle() {
     if (finished) index = 0;
     finished = false;
     playing = true;
-    schedule();
   }
   render();
+  schedule();
 }
 
-function move(to) {
+function move(to, animate = true) {
   stop();
   finished = false;
+  const previous = index;
   index = Math.max(0, Math.min(to, chunks.length - 1));
-  render();
+  render(animate && index !== previous);
 }
 
 function prepare(text) {
@@ -101,6 +133,7 @@ function prepare(text) {
   chunks = splitText(source, Number($('size').value));
   index = 0;
   finished = false;
+  buildTrack();
   render();
   $('state').textContent = chunks.length ? '準備できました' : '文章をセットしてください';
   $('message').textContent = chunks.length ? `${chunks.length} 個の区切りをセットしました。入力した文章はブラウザ内で処理されます。` : '読む文章を入力してください。';
@@ -113,7 +146,7 @@ function countText() {
 $('play').addEventListener('click', toggle);
 $('previous').addEventListener('click', () => move(index - 1));
 $('next').addEventListener('click', () => move(index + 1));
-$('restart').addEventListener('click', () => move(0));
+$('restart').addEventListener('click', () => move(0, false));
 $('apply').addEventListener('click', () => prepare($('text').value));
 $('text').addEventListener('input', () => {
   countText();
@@ -133,7 +166,7 @@ $('size').addEventListener('input', () => {
   prepare(source);
 });
 $('pause').addEventListener('change', schedule);
-$('history-size').addEventListener('change', renderHistory);
+$('motion').addEventListener('change', () => { render(); schedule(); });
 document.addEventListener('keydown', (event) => {
   if (event.target.closest('input, textarea, select, button, a, [contenteditable]') || event.ctrlKey || event.metaKey || event.altKey || event.repeat) return;
   if (['Space', 'ArrowLeft', 'ArrowRight'].includes(event.code)) {
@@ -145,7 +178,8 @@ document.addEventListener('keydown', (event) => {
 document.addEventListener('visibilitychange', () => {
   if (document.hidden && playing) { stop(); render(); }
 });
-window.addEventListener('resize', () => { fitWord(); renderHistory(); });
+window.addEventListener('resize', () => { fitTrack(); render(); schedule(); });
+reducedMotion.addEventListener('change', () => { render(); schedule(); });
 $('text').value = sample;
 countText();
 prepare(sample);
