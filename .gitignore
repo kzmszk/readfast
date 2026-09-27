@@ -6,5 +6,8 @@ node_modules/
 *.log
 coverage/
 __pycache__/
+.generated/
+.wrangler/
+.dev.vars*
 .agents/
 .codex/
