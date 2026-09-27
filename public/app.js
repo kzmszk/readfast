@@ -1,4 +1,5 @@
 import { characters, splitText, displayDuration } from './core.js';
+import { pastContext, createPositionCoordinator } from './reading-position.js';
 
 const $ = (id) => document.getElementById(id);
 const sample = [
@@ -14,9 +15,9 @@ let index = 0;
 let playing = false;
 let finished = false;
 let timer;
-let settlesAt = 0;
 let readingElements = [];
 const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+const readingPosition = createPositionCoordinator(commitPosition, schedule);
 
 function buildTrack() {
   readingElements = (chunks.length ? chunks : ['ここから、読む。']).map((text) => {
@@ -39,13 +40,11 @@ function fitTrack() {
   });
 }
 
-function positionTrack(animate) {
-  const current = readingElements[index];
-  if (!current) return;
+function commitPosition(position) {
   readingElements.forEach((span, i) => {
-    span.classList.toggle('is-current', i === index);
-    span.classList.toggle('is-past', i < index);
-    if (i === index) {
+    span.classList.toggle('is-current', i === position);
+    span.classList.toggle('is-past', i < position);
+    if (i === position) {
       span.id = 'word';
       span.setAttribute('aria-label', '表示中の文章');
       span.removeAttribute('aria-hidden');
@@ -55,28 +54,31 @@ function positionTrack(animate) {
       span.setAttribute('aria-hidden', 'true');
     }
   });
+  const past = $('past-text');
+  past.textContent = pastContext(chunks, position).join(' ');
+  past.scrollTop = past.scrollHeight;
+  $('counter').textContent = `${chunks.length ? position + 1 : 0} / ${chunks.length}`;
+  $('progress-bar').style.width = `${chunks.length ? (finished ? 100 : position / chunks.length * 100) : 0}%`;
+}
+
+function positionTrack(animate) {
+  const current = readingElements[index];
+  if (!current) return;
   const track = $('reading-track');
   const duration = animate && !reducedMotion.matches ? Number($('motion').value) : 0;
   // Keep the active phrase centered, with past and upcoming text on the same
   // baseline. The DOM stays in place; only the line's translation changes.
   const center = current.offsetLeft + current.offsetWidth / 2;
-  track.style.transitionDuration = `${duration}ms`;
-  track.style.transform = `translate(${-center}px, -50%)`;
-  settlesAt = performance.now() + duration;
-
-  // Earlier phrases that have completely left the line remain just above it.
-  // Avoid duplicating text still visible on the left of the active phrase.
-  const leftEdge = center - $('reading-window').clientWidth / 2;
-  let pastEnd = 0;
-  while (pastEnd < index && readingElements[pastEnd].offsetLeft + readingElements[pastEnd].offsetWidth <= leftEdge) pastEnd++;
-  const past = $('past-text');
-  past.textContent = chunks.slice(Math.max(0, pastEnd - 24), pastEnd).join(' ');
-  past.scrollTop = past.scrollHeight;
+  const from = getComputedStyle(track).transform;
+  const to = `translate(${-center}px, -50%)`;
+  track.style.transform = to;
+  const animation = duration ? track.animate([{ transform: from }, { transform: to }], {
+    duration, easing: 'cubic-bezier(.22, .65, .32, 1)',
+  }) : null;
+  readingPosition.moveTo(index, animation);
 }
 
 function render(animate = false) {
-  $('counter').textContent = `${chunks.length ? index + 1 : 0} / ${chunks.length}`;
-  $('progress-bar').style.width = `${chunks.length ? (finished ? 100 : index / chunks.length * 100) : 0}%`;
   $('play').textContent = playing ? '一時停止 Ⅱ' : finished ? 'もう一度読む ↺' : '再生する ▶';
   $('state').textContent = playing ? '読んでいます' : finished ? '読み終わりました' : '一時停止中';
   $('play').disabled = chunks.length === 0;
@@ -93,7 +95,7 @@ function stop() {
 
 function schedule() {
   clearTimeout(timer);
-  if (!playing) return;
+  if (!playing || readingPosition.moving) return;
   timer = setTimeout(() => {
     if (index === chunks.length - 1) {
       stop();
@@ -103,8 +105,7 @@ function schedule() {
     }
     index++;
     render(true);
-    schedule();
-  }, Math.max(0, settlesAt - performance.now()) + displayDuration(chunks[index], Number($('speed').value), $('pause').checked));
+  }, displayDuration(chunks[index], Number($('speed').value), $('pause').checked));
 }
 
 function toggle() {
@@ -116,7 +117,6 @@ function toggle() {
     playing = true;
   }
   render();
-  schedule();
 }
 
 function move(to, animate = true) {
@@ -166,7 +166,7 @@ $('size').addEventListener('input', () => {
   prepare(source);
 });
 $('pause').addEventListener('change', schedule);
-$('motion').addEventListener('change', () => { render(); schedule(); });
+$('motion').addEventListener('change', () => render());
 document.addEventListener('keydown', (event) => {
   if (event.target.closest('input, textarea, select, button, a, [contenteditable]') || event.ctrlKey || event.metaKey || event.altKey || event.repeat) return;
   if (['Space', 'ArrowLeft', 'ArrowRight'].includes(event.code)) {
@@ -178,8 +178,8 @@ document.addEventListener('keydown', (event) => {
 document.addEventListener('visibilitychange', () => {
   if (document.hidden && playing) { stop(); render(); }
 });
-window.addEventListener('resize', () => { fitTrack(); render(); schedule(); });
-reducedMotion.addEventListener('change', () => { render(); schedule(); });
+window.addEventListener('resize', () => { fitTrack(); render(); });
+reducedMotion.addEventListener('change', () => render());
 $('text').value = sample;
 countText();
 prepare(sample);

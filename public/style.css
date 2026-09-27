@@ -2,7 +2,7 @@
 
 /* One continuous line travels through a fixed reading position. */
 #reading-window { position: absolute; inset: 0; overflow: hidden; mask-image: linear-gradient(to right, transparent, #000 12%, #000 88%, transparent); }
-#reading-track { position: absolute; left: 50%; top: 50%; display: flex; align-items: baseline; width: max-content; font-family: "Noto Serif JP", "Yu Mincho", serif; font-size: clamp(23px, 4vw, 36px); font-weight: 500; line-height: 1.6; white-space: nowrap; transition-property: transform; transition-timing-function: cubic-bezier(.22, .65, .32, 1); will-change: transform; }
+#reading-track { position: absolute; left: 50%; top: 50%; display: flex; align-items: baseline; width: max-content; font-family: "Noto Serif JP", "Yu Mincho", serif; font-size: clamp(23px, 4vw, 36px); font-weight: 500; line-height: 1.6; white-space: nowrap; will-change: transform; }
 .reading-chunk { display: block; flex: 0 0 auto; padding: 0 .14em; color: #a4b0a0; }
 .reading-chunk.is-past { color: #879780; }
 .reading-chunk.is-current { color: #293b35; background: #e8efdc; border-radius: 5px; box-shadow: inset 0 -2px #91a97b; }
