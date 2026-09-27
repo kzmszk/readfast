@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>readfast — 視線をとめて、読む。</title>
+  <link rel="stylesheet" href="style.css">
+  <script type="module" src="app.js"></script>
+</head>
+<body>
+  <main>
+    <header><a class="brand" href="./">readfast<span>.</span></a><span class="badge">PERSONAL READING LAB</span></header>
+    <section class="intro"><span class="eyebrow">LESS MOVEMENT. MORE READING.</span><h1>視線をとめて、読む。</h1><p>ひとつの場所に、少しずつ。あなたのペースで文章を読み進めよう。</p></section>
+    <section class="reader" aria-label="リーダー">
+      <div class="reader-top"><span id="state" role="status">準備できました</span><span id="counter">0 / 0</span></div>
+      <div class="stage"><div class="guide top"></div><div id="word" aria-label="表示中の文章">ここから、読む。</div><div class="guide bottom"></div></div>
+      <div class="progress"><div id="progress-bar"></div></div>
+      <div class="controls"><button id="restart" class="icon" aria-label="最初に戻る" title="最初に戻る">↺</button><button id="previous" class="icon" aria-label="ひとつ前へ" title="ひとつ前へ（←）">←</button><button id="play" class="primary">読みはじめる <span>▶</span></button><button id="next" class="icon" aria-label="ひとつ次へ" title="ひとつ次へ（→）">→</button></div>
+      <p class="shortcut"><kbd>Space</kbd> 再生 / 停止 <span>·</span> <kbd>←</kbd> <kbd>→</kbd> 読み戻し / 送り</p>
+    </section>
+    <div class="workspace">
+      <section class="input-panel"><div class="section-title"><h2>読む文章</h2><button id="sample" class="text-button">サンプルを入れる</button></div><label for="text" class="sr-only">読む文章を入力</label><textarea id="text" spellcheck="false" placeholder="読みたい文章をここに貼り付けてください。"></textarea><div class="input-footer"><span id="text-count">0 文字</span><button id="apply" class="secondary">この文章をセット ↗</button></div><p id="message" role="status">入力した文章はブラウザ内で処理されます。</p></section>
+      <section class="settings"><h2>読み方を調整</h2><label for="speed">読むスピード <output id="speed-value" for="speed">600 <small>文字 / 分</small></output></label><input id="speed" type="range" min="100" max="2400" step="50" value="600"><div class="range-labels"><span>ゆっくり</span><span>はやく</span></div><label for="size">一度に表示する文字数 <output id="size-value" for="size">10 <small>文字まで</small></output></label><input id="size" type="range" min="4" max="16" step="1" value="10"><div class="range-labels"><span>少なく</span><span>多く</span></div><label class="checkbox"><input id="pause" type="checkbox" checked>句読点のある区切りで、ひと呼吸</label><p class="note">文字数を目安に、できるだけ単語の区切りで表示します。文字数を変えると先頭に戻ります。</p></section>
+    </div>
+    <footer><span>ひと呼吸ずつ、自分のペースで。</span><span>readfast / 01</span></footer>
+  </main>
+</body>
+</html>
