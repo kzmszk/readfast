@@ -1,5 +1,4 @@
 import { characters, splitText, displayDuration } from './core.js';
-import { createPositionCoordinator } from './reading-position.js';
 import { initAozora } from './aozora.js';
 import { createFullTextView } from './full-text.js';
 import { createStableHistory } from './stable-history.js';
@@ -18,14 +17,10 @@ let index = 0;
 let playing = false;
 let finished = false;
 let timer;
-let readingElements = [];
 let mode = 'rapid';
-let visibleIndex = 0;
 let fullTextDirty = true;
 const fullTextView = createFullTextView($('full-text'));
 const historyView = createStableHistory($('past-text'));
-const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
-const readingPosition = createPositionCoordinator(commitPosition, schedule);
 const library = initAozora((book) => {
   $('text').value = book.text;
   countText();
@@ -47,67 +42,25 @@ function clearSource() {
   $('reading-source').replaceChildren();
 }
 
-function buildTrack() {
-  readingElements = (chunks.length ? chunks : ['ここから、読む。']).map((text) => {
-    const span = document.createElement('span');
-    span.className = 'reading-chunk';
-    span.textContent = text;
-    return span;
-  });
-  $('reading-track').replaceChildren(...readingElements);
-  fitTrack();
-}
-
-function fitTrack() {
+function fitWord() {
   if (mode === 'full') return;
+  const word = $('word');
+  word.style.fontSize = '';
   const available = $('reading-window').clientWidth * 0.72;
-  const fontSize = parseFloat(getComputedStyle($('reading-track')).fontSize);
-  for (const span of readingElements) span.style.fontSize = '';
-  const widths = readingElements.map((span) => span.scrollWidth);
-  readingElements.forEach((span, i) => {
-    if (widths[i] > available) span.style.fontSize = `${fontSize * available / widths[i]}px`;
-  });
+  const fontSize = parseFloat(getComputedStyle(word).fontSize);
+  if (word.scrollWidth > available) word.style.fontSize = `${fontSize * available / word.scrollWidth}px`;
 }
 
 function commitPosition(position) {
-  visibleIndex = position;
-  readingElements.forEach((span, i) => {
-    span.classList.toggle('is-current', i === position);
-    span.classList.toggle('is-past', i < position);
-    if (i === position) {
-      span.id = 'word';
-      span.setAttribute('aria-label', '表示中の文章');
-      span.removeAttribute('aria-hidden');
-    } else {
-      span.removeAttribute('id');
-      span.removeAttribute('aria-label');
-      span.setAttribute('aria-hidden', 'true');
-    }
-  });
+  $('word').textContent = chunks[position] || 'ここから、読む。';
+  fitWord();
   if (mode === 'rapid') historyView.render(chunks, position);
   $('counter').textContent = `${chunks.length ? position + 1 : 0} / ${chunks.length}`;
   $('progress-bar').style.width = `${chunks.length ? (finished ? 100 : position / chunks.length * 100) : 0}%`;
   if (mode === 'full') fullTextView.highlight(position);
 }
 
-function positionTrack(animate) {
-  const current = readingElements[index];
-  if (!current) return;
-  const track = $('reading-track');
-  const duration = animate && !reducedMotion.matches ? Number($('motion').value) : 0;
-  // Keep the active phrase centered, with past and upcoming text on the same
-  // baseline. The DOM stays in place; only the line's translation changes.
-  const center = current.offsetLeft + current.offsetWidth / 2;
-  const from = getComputedStyle(track).transform;
-  const to = `translate(${-center}px, -50%)`;
-  track.style.transform = to;
-  const animation = duration ? track.animate([{ transform: from }, { transform: to }], {
-    duration, easing: 'cubic-bezier(.22, .65, .32, 1)',
-  }) : null;
-  readingPosition.moveTo(index, animation);
-}
-
-function render(animate = false) {
+function render() {
   $('play').textContent = playing ? '一時停止 Ⅱ' : finished ? 'もう一度読む ↺' : '再生する ▶';
   $('state').textContent = mode === 'full' ? '全文表示中' : playing ? '読んでいます' : finished ? '読み終わりました' : '一時停止中';
   $('play').disabled = chunks.length === 0;
@@ -120,21 +73,19 @@ function render(animate = false) {
       fullTextView.build(source, chunks);
       fullTextDirty = false;
     }
-    readingPosition.moveTo(index);
-  } else positionTrack(animate);
+  }
+  commitPosition(index);
+  schedule();
 }
 
 function setMode(nextMode) {
   if (mode === nextMode) return;
   stop();
-  // During a slide, the previous phrase is still the highlighted reading target.
-  if (readingPosition.moving) index = visibleIndex;
   mode = nextMode;
   $('rapid-view').hidden = mode !== 'rapid';
   $('full-view').hidden = mode !== 'full';
   $('mode-rapid').setAttribute('aria-pressed', String(mode === 'rapid'));
   $('mode-full').setAttribute('aria-pressed', String(mode === 'full'));
-  if (mode === 'rapid') fitTrack();
   render();
   if (mode === 'full') fullTextView.scrollToCurrent();
 }
@@ -146,7 +97,7 @@ function stop() {
 
 function schedule() {
   clearTimeout(timer);
-  if (!playing || mode !== 'rapid' || readingPosition.moving) return;
+  if (!playing || mode !== 'rapid') return;
   timer = setTimeout(() => {
     if (index === chunks.length - 1) {
       stop();
@@ -155,7 +106,7 @@ function schedule() {
       return;
     }
     index++;
-    render(true);
+    render();
   }, displayDuration(chunks[index], Number($('speed').value), $('pause').checked));
 }
 
@@ -170,12 +121,11 @@ function toggle() {
   render();
 }
 
-function move(to, animate = true) {
+function move(to) {
   stop();
   finished = false;
-  const previous = index;
   index = Math.max(0, Math.min(to, chunks.length - 1));
-  render(animate && index !== previous);
+  render();
 }
 
 function prepare(text) {
@@ -185,7 +135,6 @@ function prepare(text) {
   fullTextDirty = true;
   index = 0;
   finished = false;
-  buildTrack();
   render();
   if (mode === 'full') fullTextView.scrollToCurrent();
   $('state').textContent = chunks.length ? (mode === 'full' ? '全文表示中' : '準備できました') : '文章をセットしてください';
@@ -202,7 +151,7 @@ $('mode-full').addEventListener('click', () => setMode('full'));
 $('full-current').addEventListener('click', () => fullTextView.scrollToCurrent());
 $('previous').addEventListener('click', () => move(index - 1));
 $('next').addEventListener('click', () => move(index + 1));
-$('restart').addEventListener('click', () => move(0, false));
+$('restart').addEventListener('click', () => move(0));
 $('apply').addEventListener('click', () => {
   library.cancelLoad();
   if ($('text').value !== source) clearSource();
@@ -229,7 +178,6 @@ $('size').addEventListener('input', () => {
   prepare(source);
 });
 $('pause').addEventListener('change', schedule);
-$('motion').addEventListener('change', () => render());
 document.addEventListener('keydown', (event) => {
   if (mode === 'full') return;
   if (event.target.closest('input, textarea, select, button, a, [contenteditable]') || event.ctrlKey || event.metaKey || event.altKey || event.repeat) return;
@@ -242,8 +190,7 @@ document.addEventListener('keydown', (event) => {
 document.addEventListener('visibilitychange', () => {
   if (document.hidden && playing) { stop(); render(); }
 });
-window.addEventListener('resize', () => { fitTrack(); render(); });
-reducedMotion.addEventListener('change', () => render());
+window.addEventListener('resize', () => render());
 $('text').value = sample;
 countText();
 prepare(sample);
